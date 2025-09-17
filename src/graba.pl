@@ -1,0 +1,141 @@
+#!/usr/bin/perl -w
+# ===========================================================================
+# FILE        : src/graba.pl
+# DESCRIPTION : Records the current terminal session
+# AUTHOR      : @diacus (diacus.magnuz@gmail.com)
+# CREATION    : sáb ago 12 16:16:35 CDT 2017
+# VERSION     : 0.1.0
+# ===========================================================================
+
+use strict;
+use File::Basename;
+use File::Spec;
+use Getopt::Long;
+
+my $prefix = '/usr';
+
+# Arguments
+my $duration   = 10;
+my $delay      = 1;
+my $cast       = "$ENV{PWD}/cast.gif";
+my $help       = undef;
+my $show_title = undef;
+my $title;
+
+# Tools
+my $open       = "$prefix/bin/xdg-open";
+my $recorder   = "$prefix/bin/byzanz-record";
+my $xdotool    = "$prefix/bin/xdotool";
+my $xwininfo   = "$prefix/bin/xwininfo";
+
+sub show_help
+{
+  my $self     = basename($0);
+  my $message  = "USAGE:\n";
+  my @opciones = ( '',
+    "[--duration=<TIME>] [--wait=<TIME>] [--output=<FILE>] [--title]",
+    "[-d <TIME>] [-w <TIME>] [-o <FILE>] [-t]",
+    "[-h]",
+  );
+
+  foreach my $o (@opciones)
+  {
+    $message .= "\n  $self $o";
+  }
+
+  print "$message\n\nman $self\n";
+  exit 0;
+}
+
+sub popup_notification
+{
+  my $message = join(' ', @_);
+  my $desktop;
+  my $cmd;
+
+  $desktop = $ENV{'XDG_CURRENT_DESKTOP'};
+  $desktop =~ s/\s+//g;
+  $desktop = lc $desktop;
+
+  if ($desktop =~ /kde|plasma/)
+  {
+    system("kdialog", "--passivepopup", "$message", "5");
+  }
+  else
+  {
+    system("notify-send", "$message");
+  }
+}
+
+sub quiet
+{
+  open(NULL, '>', File::Spec->devnull());
+  *STDERR = *NULL;
+  *STDOUT = *NULL;
+}
+
+GetOptions(
+  'duration=i' => \$duration,
+  'wait=i'     => \$delay,
+  'output=s'   => \$cast,
+  'help'       => \$help,
+  'title!'     => \$show_title) or show_help;
+
+if (defined($help))
+{
+  show_help();
+  exit 0;
+}
+
+if (defined($show_title))
+{
+  $title = 26;
+}
+else
+{
+  $title = 0;
+}
+
+my $outdir = dirname($cast);
+
+die "No se puede escribir en $outdir" unless (-w $outdir);
+
+# Determina el área de captura
+my $winid    = `$xdotool getactivewindow`;
+my @wininfo  = `$xwininfo -id $winid`;
+
+my $line;
+my @buffer;
+my $command;
+my ($w, $h, $x, $y);
+
+@buffer = grep(/Width:/, @wininfo);
+$line   = shift @buffer;
+$line   =~ m/Width: (\d+)/;
+$w = $1;
+
+@buffer = grep(/Height:/, @wininfo);
+$line = shift @buffer;
+$line =~ m/Height: (\d+)/;
+$h = $1 + $title;
+
+@buffer = grep(/Corners:/, @wininfo);
+$line = shift @buffer;
+$line =~ m/Corners:\s+\+(\d+)\+(\d+)/;
+$x = $1;
+$y = $2 - $title;
+
+if (fork())
+{
+  system("clear");
+}
+else
+{
+  sleep($delay);
+
+  popup_notification('Reconfding starts');
+  system("$recorder -d $duration -w $w -h $h -x $x -y $y $cast");
+  popup_notification('Recording has finished');
+  sleep(1);
+  system("$open $cast");
+}

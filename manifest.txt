@@ -1,0 +1,8 @@
+Package: graba
+Version: 0.1.0
+Section: utilities
+Priority: optional
+Architecture: all
+Depends: byzanz, xdotool, x11-utils 
+Maintainer: Diacus Mágnuz <diacus.magnuz@gmail.com>
+Description: command line session screencast recorder
