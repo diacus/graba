@@ -1,0 +1,23 @@
+#+TITLE: Graba
+
+graba tools captures the current terminal session into a GIF animation.
+
+* Installation
+** Debian based
+  Currently =.deb= package is supported, the deb package also includes
+  its man page.
+
+  #+begin_src shell
+    make
+    cd build
+    sudo dpkg -i graba-x.y.z.deb
+  #+end_src
+  
+** Manual
+   Copy [[file:./src/graba.pl][graba.pl]] file to a directory listed in your path =$PATH= and
+   install the dependencies
+   
+* Usage
+  After installation check out the =graba (1)= man page.
+
+  
